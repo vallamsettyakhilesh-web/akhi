@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Database Access Approval Queue | SRMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 pb-4 border-b border-slate-200">
+    <div>
+      <span class="text-xs font-mono font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+        Administrator Control Center
+      </span>
+      <h1 class="text-2xl font-bold text-slate-900 mt-1">Database Access Requests Queue</h1>
+      <p class="text-xs text-slate-500">
+        Review, grant, or revoke temporary, role-scoped database table viewing privileges for non-admin personnel.
+      </p>
+    </div>
+
+    <div class="mt-4 md:mt-0">
+      <a href="/admin/database" class="px-3 py-2 bg-slate-900 hover:bg-black text-white text-xs font-semibold rounded-lg shadow-sm transition">
+        &larr; Return to Database Console
+      </a>
+    </div>
+  </div>
+
+  <!-- Requests Table -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">
+        Access Requests Log
+      </h3>
+      <span class="text-xs text-slate-500 font-mono">Total Requests: {{ requests|length }}</span>
+    </div>
+
+    {% if requests %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+        <thead class="bg-slate-50 text-slate-500 font-semibold uppercase">
+          <tr>
+            <th class="px-6 py-3">Requester Identity</th>
+            <th class="px-6 py-3">Role</th>
+            <th class="px-6 py-3">Target Table</th>
+            <th class="px-6 py-3">Requested Duration</th>
+            <th class="px-6 py-3">Justification</th>
+            <th class="px-6 py-3">Status / Expiry</th>
+            <th class="px-6 py-3 text-right">Administrative Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white">
+          {% for r in requests %}
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="px-6 py-4">
+              <div class="font-bold text-slate-900 text-sm">{{ r.full_name }}</div>
+              <div class="font-mono text-slate-500">{{ r.email }}</div>
+            </td>
+
+            <td class="px-6 py-4">
+              <span class="badge-role {% if r.role == 'student' %}badge-student{% elif r.role == 'faculty_tpo' %}badge-faculty{% elif r.role == 'recruiter' %}badge-recruiter{% else %}badge-admin{% endif %}">
+                {{ r.role }}
+              </span>
+            </td>
+
+            <td class="px-6 py-4 font-mono font-bold text-blue-700">
+              {{ r.target_table }}
+            </td>
+
+            <td class="px-6 py-4 font-mono text-slate-600">
+              {{ r.requested_duration_minutes }} min
+            </td>
+
+            <td class="px-6 py-4 max-w-xs text-slate-700 leading-relaxed">
+              {{ r.reason }}
+            </td>
+
+            <td class="px-6 py-4">
+              {% if r.status == 'approved' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  APPROVED
+                </span>
+                <div class="text-[10px] text-slate-500 font-mono mt-0.5">Expires: {{ r.expires_at }}</div>
+              {% elif r.status == 'rejected' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                  REJECTED
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                  PENDING REVIEW
+                </span>
+              {% endif %}
+            </td>
+
+            <td class="px-6 py-4 text-right">
+              {% if r.status == 'pending' %}
+              <div class="flex items-center justify-end space-x-2">
+                <!-- Approve Form -->
+                <form action="/admin/access-requests/action" method="POST" class="inline">
+                  <input type="hidden" name="request_id" value="{{ r.id }}">
+                  <input type="hidden" name="action" value="approve">
+                  <input type="hidden" name="granted_minutes" value="{{ r.requested_duration_minutes }}">
+                  <input type="hidden" name="remarks" value="Approved by System Administrator for requested audit duration.">
+                  <button type="submit" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded text-xs transition shadow-sm">
+                    Approve
+                  </button>
+                </form>
+
+                <!-- Reject Form -->
+                <form action="/admin/access-requests/action" method="POST" class="inline">
+                  <input type="hidden" name="request_id" value="{{ r.id }}">
+                  <input type="hidden" name="action" value="reject">
+                  <input type="hidden" name="granted_minutes" value="0">
+                  <input type="hidden" name="remarks" value="Access denied. Request lacks sufficient compliance justification.">
+                  <button type="submit" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded text-xs transition shadow-sm">
+                    Reject
+                  </button>
+                </form>
+              </div>
+              {% else %}
+                <span class="text-[11px] text-slate-400 font-mono">Reviewed</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-8 text-center text-xs text-slate-400 font-mono">
+      No database access requests currently in queue.
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

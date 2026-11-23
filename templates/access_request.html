@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Formal Database Access Request | SRMS{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Header -->
+  <div class="mb-8 pb-4 border-b border-slate-200">
+    <span class="text-xs font-mono font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+      Governance Protocol &bull; Section 2
+    </span>
+    <h1 class="text-2xl font-bold text-slate-900 mt-1">Formal Database Access Request</h1>
+    <p class="text-xs text-slate-500">
+      Institutional databases are strictly isolated from standard non-admin roles. Submit this request to seek temporary, time-scoped authorization from the System Administrator.
+    </p>
+  </div>
+
+  <!-- Active Temporary Grants Banner (if any) -->
+  {% if active_grants %}
+  <div class="mb-8 bg-emerald-50 border border-emerald-300 rounded-xl p-5 shadow-sm">
+    <div class="flex items-center space-x-2 mb-2">
+      <svg class="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+      </svg>
+      <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-900">
+        Active Temporary Database Access Grants
+      </h3>
+    </div>
+    
+    <div class="space-y-2">
+      {% for g in active_grants %}
+      <div class="bg-white p-3 rounded-lg border border-emerald-200 flex items-center justify-between text-xs">
+        <div>
+          <span class="font-bold text-slate-900 font-mono">Target Table: {{ g.target_table }}</span>
+          <div class="text-[11px] text-slate-500">Expires at: <span class="font-mono text-emerald-700 font-semibold">{{ g.expires_at }}</span></div>
+        </div>
+        <a href="/admin/database?table={{ g.target_table }}" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold shadow-sm transition">
+          Access Granted Table &rarr;
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    
+    <!-- Submission Form -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">
+        New Access Request Application
+      </h3>
+      <p class="text-xs text-slate-500 mb-6">
+        All requests are cryptographically audited and require administrative sign-off.
+      </p>
+
+      <form action="/access-request" method="POST" class="space-y-4">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Target Database Table</label>
+          <select name="target_table" required class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="students">students (Academic Records, CGPA, Verification)</option>
+            <option value="projects">projects (Technical & Academic Project Stacks)</option>
+            <option value="internships">internships (Work Experience & Industrial Training)</option>
+            <option value="audit_logs">audit_logs (Security Audit Trail)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Requested Access Duration</label>
+          <select name="requested_duration_minutes" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="30">30 Minutes (Quick Audit)</option>
+            <option value="60" selected>60 Minutes (1 Hour Standard)</option>
+            <option value="120">120 Minutes (2 Hours Investigation)</option>
+            <option value="240">240 Minutes (4 Hours Half-Day)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Justification & Regulatory Purpose</label>
+          <textarea name="reason" rows="4" required minlength="10" placeholder="State the specific audit, verification, or reporting requirement necessitating direct backend table inspection..."
+            class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500"></textarea>
+          <span class="text-[10px] text-slate-400">Minimum 10 characters required. Reviewed by System Administrator.</span>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+          Submit Formal Request to Admin Queue
+        </button>
+
+      </form>
+    </div>
+
+    <!-- User's Previous Requests History -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">
+          Your Request History
+        </h3>
+        <p class="text-xs text-slate-500 mb-4">
+          Status of previously submitted database access requests.
+        </p>
+
+        {% if requests %}
+        <div class="space-y-3">
+          {% for r in requests %}
+          <div class="border border-slate-200 rounded-lg p-3 bg-slate-50/60 text-xs">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-bold text-slate-900 font-mono">Table: {{ r.target_table }}</span>
+              {% if r.status == 'approved' %}
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">APPROVED</span>
+              {% elif r.status == 'rejected' %}
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">REJECTED</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">PENDING REVIEW</span>
+              {% endif %}
+            </div>
+            <p class="text-slate-600 text-[11px] italic mb-1">"{{ r.reason }}"</p>
+            
+            {% if r.reviewer_remarks %}
+            <div class="text-[10px] text-slate-500 pt-1 border-t border-slate-200">
+              Admin Remarks: <span class="font-semibold text-slate-700">{{ r.reviewer_remarks }}</span>
+            </div>
+            {% endif %}
+
+            <div class="text-[10px] text-slate-400 mt-1 font-mono">
+              Submitted: {{ r.created_at }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg">
+          No previous access requests filed.
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-200 text-[11px] text-slate-400">
+        System Guard: Unapproved attempts to query `/admin/database` trigger immediate HTTP 403 Forbidden barriers.
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

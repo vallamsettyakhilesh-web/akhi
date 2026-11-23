@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Isolated Database Console (Admin Only) | SRMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Header & Isolation Barrier Notice -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-4 border-b border-slate-200">
+    <div>
+      <div class="flex items-center space-x-2">
+        <span class="text-xs font-mono font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-300">
+          Section 2: Isolated Admin Console
+        </span>
+        <span class="text-xs font-mono bg-slate-900 text-white px-2 py-0.5 rounded">
+          /admin/database
+        </span>
+      </div>
+      <h1 class="text-2xl font-bold text-slate-900 mt-1">Backend Database Management & Inspector</h1>
+      <p class="text-xs text-slate-500">
+        Direct schema and raw tabular record visibility. Strictly isolated from standard students, faculty, and recruiters.
+      </p>
+    </div>
+
+    <div class="mt-4 md:mt-0 flex items-center space-x-3">
+      <a href="/admin/access-requests" class="px-3 py-2 bg-white border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-50 shadow-sm transition">
+        Manage Access Requests Queue &rarr;
+      </a>
+    </div>
+  </div>
+
+  <!-- Alert Banners -->
+  {% if request.query_params.get('success') %}
+  <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-sm">
+    <div class="flex items-center space-x-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+      <span>{{ request.query_params.get('success') }}</span>
+    </div>
+  </div>
+  {% endif %}
+  {% if request.query_params.get('error') %}
+  <div class="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center justify-between shadow-sm">
+    <div class="flex items-center space-x-2">
+      <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+      <span>{{ request.query_params.get('error') }}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Live Registered Database Overview Cards -->
+  {% if stats %}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Registered Users</div>
+      <div class="text-2xl font-extrabold text-slate-900 mt-1 font-mono">{{ stats.total_users }}</div>
+      <div class="text-[10px] text-emerald-600 font-semibold mt-1">Live in Database</div>
+    </div>
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Student Profiles</div>
+      <div class="text-2xl font-extrabold text-blue-600 mt-1 font-mono">{{ stats.total_students }}</div>
+      <div class="text-[10px] text-slate-400 mt-1">Academic Registry</div>
+    </div>
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Faculty & TPOs</div>
+      <div class="text-2xl font-extrabold text-purple-600 mt-1 font-mono">{{ stats.total_faculty }}</div>
+      <div class="text-[10px] text-slate-400 mt-1">Audit Evaluators</div>
+    </div>
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Corporate Recruiters</div>
+      <div class="text-2xl font-extrabold text-sky-600 mt-1 font-mono">{{ stats.total_recruiters }}</div>
+      <div class="text-[10px] text-slate-400 mt-1">Talent Searchers</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Security Boundary Banner -->
+  <div class="mb-6 p-4 bg-slate-900 text-white rounded-xl shadow-md border border-slate-800">
+    <div class="flex items-start justify-between">
+      <div class="flex items-start space-x-3">
+        <div class="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center font-bold text-white text-sm flex-shrink-0 mt-0.5">
+          HQ
+        </div>
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wider text-rose-400">Main Admin Database Console</div>
+          <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">
+            Exclusive single administrator access strictly enforced for <strong>vallamsettyakhilesh@gmail.com</strong>. All newly registered accounts and student profiles are automatically recorded here in real-time.
+          </p>
+        </div>
+      </div>
+      <span class="inline-flex items-center px-2.5 py-1 rounded text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+        ACID Active
+      </span>
+    </div>
+  </div>
+
+  <!-- Table Selector Bar -->
+  <div class="mb-6 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+    <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Database Tables (ACID SQLite)</div>
+    <div class="flex flex-wrap gap-2">
+      {% for tbl in tables %}
+      <a href="/admin/database?table={{ tbl }}"
+        class="px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition {% if active_table == tbl %}bg-slate-900 text-white shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700{% endif %}">
+        {{ tbl }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Active Table Schema & Records Viewer -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+    <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-bold font-mono text-emerald-400">
+          TABLE: {{ active_table }}
+        </h3>
+        <p class="text-xs text-slate-400 mt-0.5">Showing up to 100 rows &bull; ACID Atomic Transaction Bounds</p>
+      </div>
+      <span class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded text-slate-300">
+        {{ rows|length }} row(s) returned
+      </span>
+    </div>
+
+    {% if rows %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-left text-xs font-mono">
+        <thead class="bg-slate-50 text-slate-600 font-bold uppercase">
+          <tr>
+            {% for col in columns %}
+            <th class="px-4 py-3 whitespace-nowrap">{{ col }}</th>
+            {% endfor %}
+            {% if active_table == 'users' %}
+            <th class="px-4 py-3 whitespace-nowrap text-rose-600">Actions</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white">
+          {% for r in rows %}
+          <tr class="hover:bg-slate-50 transition">
+            {% for col in columns %}
+            <td class="px-4 py-2.5 whitespace-nowrap text-slate-800">
+              {% if r[col] is none %}
+                <span class="text-slate-400 italic">NULL</span>
+              {% elif col == 'plain_password' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-50 text-amber-900 border border-amber-200">
+                  {{ r[col] if r[col] else '(Not Set)' }}
+                </span>
+              {% elif 'password' in col %}
+                {% if r.get('plain_password') %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-emerald-50 text-emerald-900 border border-emerald-200" title="Password: {{ r['plain_password'] }}">
+                    {{ r['plain_password'] }}
+                  </span>
+                {% else %}
+                  <span class="text-slate-400 text-[10px]">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull; (Bcrypt Hash)</span>
+                {% endif %}
+              {% else %}
+                {{ r[col] }}
+              {% endif %}
+            </td>
+            {% endfor %}
+            {% if active_table == 'users' %}
+            <td class="px-4 py-2.5 whitespace-nowrap">
+              {% if r['email'].strip().lower() == 'vallamsettyakhilesh@gmail.com' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                  Head Admin
+                </span>
+              {% else %}
+                <form action="/admin/user/{{ r['id'] }}/delete" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete user {{ r.full_name }} ({{ r.email }})? All associated records will be removed.');" class="inline">
+                  <button type="submit" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-sans text-xs font-semibold rounded shadow-sm transition">
+                    Delete User
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-8 text-center text-xs text-slate-400 font-mono">
+      Table contains 0 records.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Admin SQL Query Execution Console -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono">
+          Admin SQL Terminal (Read-Only Safety Wrapper)
+        </h3>
+        <p class="text-xs text-slate-500">Executes queries inside transaction savepoints with auto-rollback.</p>
+      </div>
+      <span class="text-[10px] font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold">
+        SELECT ONLY
+      </span>
+    </div>
+
+    <form action="/admin/database/query" method="POST" class="space-y-3">
+      <textarea name="sql_query" rows="3" required placeholder="SELECT * FROM students WHERE cgpa >= 9.0;"
+        class="w-full text-xs font-mono border border-slate-300 rounded-lg p-3 bg-slate-900 text-emerald-400 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+      
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] text-slate-400">Data mutation queries (DROP, INSERT, UPDATE) are blocked in this console for safety.</span>
+        <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-semibold rounded-lg shadow-sm transition">
+          Execute Query
+        </button>
+      </div>
+    </form>
+
+    {% if custom_result %}
+    <div class="mt-6 pt-4 border-t border-slate-200">
+      <h4 class="text-xs font-bold text-slate-700 uppercase mb-2 font-mono">Query Result</h4>
+      <div class="overflow-x-auto bg-slate-50 p-3 rounded-lg border border-slate-200">
+        <table class="min-w-full divide-y divide-slate-200 text-xs font-mono">
+          <thead>
+            <tr>
+              {% for k in custom_result.columns %}
+              <th class="px-3 py-1.5 font-bold text-slate-700 text-left">{{ k }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in custom_result.rows %}
+            <tr>
+              {% for k in custom_result.columns %}
+              <td class="px-3 py-1.5 text-slate-800">{{ row[k] }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

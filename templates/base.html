@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Student Resume Management System (SRMS){% endblock %}</title>
+  <!-- Tailwind CSS CDN with fallback -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/css/custom.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+
+  <!-- Top System Header & Security Status -->
+  <header class="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Branding -->
+        <div class="flex items-center space-x-3">
+          <a href="/" class="flex items-center space-x-2">
+            <span class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white tracking-wider text-sm shadow">
+              SR
+            </span>
+            <span class="font-bold text-lg tracking-tight text-white">SRMS <span class="text-blue-400 text-xs font-semibold uppercase px-2 py-0.5 rounded bg-blue-900/50 border border-blue-700/60 ml-1">Enterprise</span></span>
+          </a>
+        </div>
+
+        <!-- Navigation Links by Role -->
+        {% if user %}
+        <nav class="hidden md:flex items-center space-x-1 text-sm font-medium">
+          {% if user.role == 'student' %}
+            <a href="/student/portal" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'student_portal' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Profile Builder & RRI
+            </a>
+            <a href="/student/resume/preview" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'resume_preview' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+              ATS Resume Preview
+            </a>
+            <a href="/access-request" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'access_request' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Request DB Access
+            </a>
+          {% elif user.role == 'faculty_tpo' %}
+            <a href="/faculty/queue" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'faculty_queue' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Audit & Verification Queue
+            </a>
+            <a href="/access-request" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'access_request' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Request DB Access
+            </a>
+          {% elif user.role == 'recruiter' %}
+            <a href="/recruiter/console" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'recruiter_console' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Talent Console & Candidates
+            </a>
+            <a href="/access-request" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'access_request' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Request DB Access
+            </a>
+          {% elif user.role == 'admin' %}
+            <a href="/admin/database" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'admin_database' %}bg-slate-800 text-amber-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Database Console
+            </a>
+            <a href="/admin/user-approvals" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'user_approvals' %}bg-slate-800 text-rose-400 font-semibold{% else %}text-slate-300{% endif %}">
+              User Approvals
+            </a>
+            <a href="/admin/access-requests" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'admin_requests' %}bg-slate-800 text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+              DB Access Requests
+            </a>
+            <a href="/faculty/queue" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'faculty_queue' %}bg-slate-800 text-purple-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Verification Queue
+            </a>
+            <a href="/recruiter/console" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'recruiter_console' %}bg-slate-800 text-sky-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Recruiter Console
+            </a>
+            <a href="/student/portal" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white {% if active_page == 'student_portal' %}bg-slate-800 text-emerald-400 font-semibold{% else %}text-slate-300{% endif %}">
+              Student Portal
+            </a>
+          {% endif %}
+        </nav>
+
+        <!-- User Identity & Logout Button -->
+        <div class="flex items-center space-x-3">
+          <div class="text-right hidden sm:block">
+            <div class="text-xs font-semibold text-slate-200">{{ user.full_name }}</div>
+            <div class="text-[10px] uppercase tracking-wider font-mono">
+              {% if user.role == 'admin' %}
+                <span class="text-rose-400 font-bold">System Administrator</span>
+              {% elif user.role == 'faculty_tpo' %}
+                <span class="text-purple-400 font-bold">Faculty / TPO</span>
+              {% elif user.role == 'recruiter' %}
+                <span class="text-sky-400 font-bold">Corporate Recruiter</span>
+              {% else %}
+                <span class="text-emerald-400 font-bold">Student</span>
+              {% endif %}
+            </div>
+          </div>
+          <a href="/logout" class="bg-slate-800 hover:bg-red-600/90 text-slate-200 hover:text-white text-xs font-medium px-3 py-1.5 rounded border border-slate-700 transition">
+            Sign Out
+          </a>
+        </div>
+        {% else %}
+        <div class="flex items-center space-x-3 text-xs">
+          <a href="/register" class="text-blue-400 hover:text-blue-300 font-medium">New Account Request</a>
+          <span class="text-slate-600">|</span>
+          <span class="text-slate-400 font-mono text-[11px]">Security Guardrails Active</span>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Notices / Alerts -->
+  <main class="flex-grow">
+    {% if error %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+      <div class="bg-rose-50 border-l-4 border-rose-500 p-4 rounded-r shadow-sm">
+        <div class="flex items-center">
+          <div class="text-sm font-medium text-rose-800">
+            {{ error }}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if success %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+      <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r shadow-sm">
+        <div class="flex items-center">
+          <div class="text-sm font-medium text-emerald-800">
+            {{ success }}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Production Security Footer -->
+  <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 text-xs py-6 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="font-mono text-slate-300">ACID Atomic Transaction Guardrails: Active</span>
+        <span class="text-slate-600">|</span>
+        <span class="text-slate-400">Head Admin Approval Gate: Active</span>
+      </div>
+      <div class="text-slate-500 font-mono text-[11px]">
+        Student Resume Management System &bull; RBAC Level 4 Strict Guard
+      </div>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
