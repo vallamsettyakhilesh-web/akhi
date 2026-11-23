@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty & TPO Verification Queue | SRMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 pb-4 border-b border-slate-200">
+    <div>
+      <span class="text-xs font-mono font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+        MOD-03 Verification Queue
+      </span>
+      <h1 class="text-2xl font-bold text-slate-900 mt-1">Institutional Audit & Credential Verification</h1>
+      <p class="text-xs text-slate-500">
+        Side-by-side audit console for verifying student mark sheets, academic claims, and issuing verified credentials.
+      </p>
+    </div>
+
+    <div class="mt-4 md:mt-0 flex items-center space-x-2">
+      <span class="text-xs text-slate-500 font-mono">
+        Active Auditor: <strong class="text-slate-800">{{ user.full_name }}</strong>
+      </span>
+    </div>
+  </div>
+
+  <!-- Candidates Table -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">
+        Registered Candidates Audit Roster
+      </h3>
+      <span class="text-xs text-slate-500 font-mono">Total Candidates: {{ students|length }}</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+        <thead class="bg-slate-50 text-slate-500 uppercase font-semibold">
+          <tr>
+            <th class="px-6 py-3">Roll No & Name</th>
+            <th class="px-6 py-3">Branch</th>
+            <th class="px-6 py-3">CGPA / Backlogs</th>
+            <th class="px-6 py-3">Attached Marksheet</th>
+            <th class="px-6 py-3">Audit Status</th>
+            <th class="px-6 py-3 text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white">
+          {% for s in students %}
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="px-6 py-4">
+              <div class="font-bold text-slate-900 text-sm">{{ s.full_name }}</div>
+              <div class="font-mono text-slate-500">{{ s.roll_no }} &bull; {{ s.email }}</div>
+            </td>
+
+            <td class="px-6 py-4 font-semibold text-slate-700">
+              {{ s.branch }}
+            </td>
+
+            <td class="px-6 py-4">
+              <span class="font-bold text-slate-900 font-mono">{{ s.cgpa }} / 10.0</span>
+              <div class="text-[11px] {% if s.backlogs > 0 %}text-rose-600 font-semibold{% else %}text-emerald-600{% endif %}">
+                {% if s.backlogs > 0 %}{{ s.backlogs }} Active Backlog(s){% else %}Zero Backlogs{% endif %}
+              </div>
+            </td>
+
+            <td class="px-6 py-4">
+              {% if s.marksheet_filename %}
+                <span class="inline-flex items-center text-blue-600 font-mono text-[11px]">
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  {{ s.marksheet_filename }}
+                </span>
+              {% else %}
+                <span class="text-slate-400 italic">No file attached</span>
+              {% endif %}
+            </td>
+
+            <td class="px-6 py-4">
+              {% if s.is_verified %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  VERIFIED
+                </span>
+                <div class="text-[10px] text-slate-400 mt-0.5">By: {{ s.verified_by_name or "Faculty" }}</div>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                  PENDING REVIEW
+                </span>
+              {% endif %}
+            </td>
+
+            <td class="px-6 py-4 text-right">
+              <button type="button" 
+                onclick="openAuditModal('{{ s.id }}', '{{ s.full_name }}', '{{ s.roll_no }}', '{{ s.branch }}', '{{ s.cgpa }}', '{{ s.tenth_pct }}', '{{ s.twelfth_pct }}', '{{ s.backlogs }}', '{{ s.marksheet_filename }}', '{{ s.skills }}', '{{ s.is_verified }}', '{{ s.verification_remarks|replace("'", "\\'") }}')"
+                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded text-xs transition shadow-sm">
+                Open Side-by-Side Audit
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Side-by-Side Audit Viewer Modal -->
+  <div id="audit_modal" class="fixed inset-0 z-50 overflow-y-auto hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-300 max-w-4xl w-full overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center space-x-2">
+            <span>Side-by-Side Credential Verification Audit</span>
+            <span id="modal_verified_pill" class="text-[10px] uppercase px-2 py-0.5 rounded font-mono"></span>
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Review submitted claims against institutional records before certifying.</p>
+        </div>
+        <button type="button" onclick="closeAuditModal()" class="text-slate-400 hover:text-white text-lg font-bold">
+          &times;
+        </button>
+      </div>
+
+      <!-- Side-by-Side Content Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+        
+        <!-- Left Side: Student Claims & Transcript Details -->
+        <div class="p-6 bg-slate-50 space-y-4">
+          <div class="border-b border-slate-200 pb-3">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Candidate Identity</span>
+            <div id="modal_student_name" class="text-base font-bold text-slate-900"></div>
+            <div class="text-xs font-mono text-slate-600">
+              Roll: <span id="modal_roll_no" class="font-bold"></span> &bull; Branch: <span id="modal_branch" class="font-bold"></span>
+            </div>
+          </div>
+
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2">Claimed Academic Metrics</span>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="bg-white p-2.5 rounded border border-slate-200">
+                <span class="text-slate-500 block text-[10px]">CGPA (Out of 10.0)</span>
+                <span id="modal_cgpa" class="text-sm font-extrabold text-blue-700 font-mono"></span>
+              </div>
+              <div class="bg-white p-2.5 rounded border border-slate-200">
+                <span class="text-slate-500 block text-[10px]">Active Backlogs</span>
+                <span id="modal_backlogs" class="text-sm font-extrabold font-mono"></span>
+              </div>
+              <div class="bg-white p-2.5 rounded border border-slate-200">
+                <span class="text-slate-500 block text-[10px]">10th Grade Score</span>
+                <span id="modal_tenth" class="text-xs font-bold text-slate-800 font-mono"></span>
+              </div>
+              <div class="bg-white p-2.5 rounded border border-slate-200">
+                <span class="text-slate-500 block text-[10px]">12th Grade Score</span>
+                <span id="modal_twelfth" class="text-xs font-bold text-slate-800 font-mono"></span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Attached Grade Sheet / Mark Sheet Document</span>
+            <div class="p-3 bg-white border border-slate-200 rounded text-xs flex items-center justify-between">
+              <span id="modal_marksheet" class="font-mono text-slate-800"></span>
+              <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border">Simulated Document</span>
+            </div>
+          </div>
+
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Reported Skills</span>
+            <div id="modal_skills" class="text-xs text-slate-700 bg-white p-2.5 rounded border border-slate-200"></div>
+          </div>
+        </div>
+
+        <!-- Right Side: Faculty Verification Decision Panel -->
+        <div class="p-6 flex flex-col justify-between">
+          <form id="audit_form" action="/faculty/verify" method="POST" class="space-y-4">
+            <input type="hidden" name="student_id" id="form_student_id">
+            
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                Audit Decision
+              </label>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="border-2 border-slate-200 rounded-lg p-3 flex items-center space-x-2 cursor-pointer hover:border-emerald-500 has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50/50">
+                  <input type="radio" name="action" value="approve" checked class="text-emerald-600 focus:ring-emerald-500">
+                  <div>
+                    <span class="text-xs font-bold text-slate-800 block">Approve & Certify</span>
+                    <span class="text-[10px] text-emerald-700">+15.0 RRI points granted</span>
+                  </div>
+                </label>
+
+                <label class="border-2 border-slate-200 rounded-lg p-3 flex items-center space-x-2 cursor-pointer hover:border-rose-500 has-[:checked]:border-rose-600 has-[:checked]:bg-rose-50/50">
+                  <input type="radio" name="action" value="reject" class="text-rose-600 focus:ring-rose-500">
+                  <div>
+                    <span class="text-xs font-bold text-slate-800 block">Reject / Flag Discrepancy</span>
+                    <span class="text-[10px] text-rose-700">0.0 RRI verification points</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                Mandatory Auditor Timestamped Remarks
+              </label>
+              <textarea name="remarks" id="form_remarks" rows="4" required
+                placeholder="State verified mark sheet serial numbers or reasons for rejection..."
+                class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500"></textarea>
+              <span class="text-[10px] text-slate-400">Remarks are immutably logged into the audit trail and visible to the student.</span>
+            </div>
+
+            <div class="pt-4 border-t border-slate-200 flex items-center justify-end space-x-3">
+              <button type="button" onclick="closeAuditModal()"
+                class="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                Close
+              </button>
+              <button type="submit"
+                class="px-5 py-2 bg-slate-900 hover:bg-black text-white rounded-lg text-xs font-semibold shadow transition">
+                Commit Audit Verification Decision
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function openAuditModal(id, name, roll, branch, cgpa, tenth, twelfth, backlogs, marksheet, skills, isVerified, remarks) {
+  document.getElementById('form_student_id').value = id;
+  document.getElementById('modal_student_name').textContent = name;
+  document.getElementById('modal_roll_no').textContent = roll;
+  document.getElementById('modal_branch').textContent = branch;
+  document.getElementById('modal_cgpa').textContent = cgpa + ' / 10.0';
+  document.getElementById('modal_backlogs').textContent = backlogs;
+  document.getElementById('modal_tenth').textContent = tenth + '%';
+  document.getElementById('modal_twelfth').textContent = twelfth + '%';
+  document.getElementById('modal_marksheet').textContent = marksheet || 'None provided';
+  document.getElementById('modal_skills').textContent = skills || 'No skills listed';
+  document.getElementById('form_remarks').value = remarks || '';
+
+  const pill = document.getElementById('modal_verified_pill');
+  if (isVerified === '1' || isVerified === 1) {
+    pill.textContent = 'VERIFIED';
+    pill.className = 'text-[10px] uppercase px-2 py-0.5 rounded font-mono bg-emerald-500 text-white';
+  } else {
+    pill.textContent = 'PENDING';
+    pill.className = 'text-[10px] uppercase px-2 py-0.5 rounded font-mono bg-amber-500 text-white';
+  }
+
+  document.getElementById('audit_modal').classList.remove('hidden');
+}
+
+function closeAuditModal() {
+  document.getElementById('audit_modal').classList.add('hidden');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Recruiter Talent Console | SRMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 pb-4 border-b border-slate-200">
+    <div>
+      <span class="text-xs font-mono font-bold uppercase tracking-wider text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+        MOD-06 Recruiter Talent Console
+      </span>
+      <h1 class="text-2xl font-bold text-slate-900 mt-1">Institutional Talent Search & Bulk Export</h1>
+      <p class="text-xs text-slate-500">
+        Filter verified candidates by branch, academic CGPA boundaries, and technical stacks. Export bulk ATS-ready resume packages.
+      </p>
+    </div>
+
+    <!-- Bulk ZIP Export Form Button -->
+    <div class="mt-4 md:mt-0">
+      <form action="/recruiter/export-zip" method="GET" class="inline">
+        <input type="hidden" name="branch" value="{{ filters.branch }}">
+        <input type="hidden" name="min_cgpa" value="{{ filters.min_cgpa }}">
+        <input type="hidden" name="skill" value="{{ filters.skill }}">
+        <input type="hidden" name="verified_only" value="{{ '1' if filters.verified_only else '0' }}">
+        <input type="hidden" name="zero_backlogs" value="{{ '1' if filters.zero_backlogs else '0' }}">
+        
+        <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Export Filtered Candidates (.ZIP)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    
+    <!-- Filter Sidebar (1 Col) -->
+    <div class="lg:col-span-1 space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 mb-4 pb-2 border-b border-slate-100 flex items-center justify-between">
+          <span>Search & Filter Criteria</span>
+          <a href="/recruiter/console" class="text-[11px] text-blue-600 font-semibold hover:underline">Reset</a>
+        </h3>
+
+        <form action="/recruiter/console" method="GET" class="space-y-4">
+          
+          <!-- Branch Filter -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Academic Branch</label>
+            <select name="branch" class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2 focus:ring-blue-500 focus:border-blue-500">
+              <option value="" {% if not filters.branch %}selected{% endif %}>All Engineering Branches</option>
+              <option value="CSE" {% if filters.branch == 'CSE' %}selected{% endif %}>Computer Science (CSE)</option>
+              <option value="IT" {% if filters.branch == 'IT' %}selected{% endif %}>Information Technology (IT)</option>
+              <option value="ECE" {% if filters.branch == 'ECE' %}selected{% endif %}>Electronics & Comm (ECE)</option>
+              <option value="MECH" {% if filters.branch == 'MECH' %}selected{% endif %}>Mechanical Engineering</option>
+            </select>
+          </div>
+
+          <!-- Min CGPA Slider -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-semibold text-slate-700">Minimum CGPA</label>
+              <span id="cgpa_val" class="text-xs font-mono font-bold text-blue-600">{{ filters.min_cgpa or 0.0 }}</span>
+            </div>
+            <input type="range" name="min_cgpa" min="0.0" max="10.0" step="0.5" value="{{ filters.min_cgpa or 0.0 }}"
+              oninput="document.getElementById('cgpa_val').textContent = parseFloat(this.value).toFixed(1)"
+              class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+          </div>
+
+          <!-- Technical Skill Tag Keyword -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Required Tech Skill</label>
+            <input type="text" name="skill" value="{{ filters.skill or '' }}" placeholder="e.g. Python, React, Java..."
+              class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2 focus:ring-blue-500 focus:border-blue-500">
+          </div>
+
+          <!-- Toggles -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <label class="flex items-center space-x-2 cursor-pointer text-xs">
+              <input type="checkbox" name="verified_only" value="1" {% if filters.verified_only %}checked{% endif %}
+                class="rounded text-blue-600 focus:ring-blue-500">
+              <span class="text-slate-800 font-medium">TPO Verified Only</span>
+            </label>
+
+            <label class="flex items-center space-x-2 cursor-pointer text-xs">
+              <input type="checkbox" name="zero_backlogs" value="1" {% if filters.zero_backlogs %}checked{% endif %}
+                class="rounded text-blue-600 focus:ring-blue-500">
+              <span class="text-slate-800 font-medium">Zero Active Backlogs</span>
+            </label>
+          </div>
+
+          <button type="submit" class="w-full py-2 bg-slate-900 hover:bg-black text-white text-xs font-semibold rounded-lg shadow-sm transition">
+            Apply Filters
+          </button>
+        </form>
+      </div>
+
+      <!-- Institutional Notice Card -->
+      <div class="bg-sky-50 border border-sky-200 rounded-xl p-4 text-xs text-sky-900 space-y-1">
+        <span class="font-bold block">Bulk ZIP Packet Specifications:</span>
+        <p class="text-[11px] leading-relaxed text-sky-800">
+          Each resume in the ZIP archive conforms to the standardized nomenclature: <code class="bg-sky-100 px-1 py-0.5 rounded font-mono font-bold">RollNo_Name_Branch.pdf</code>.
+        </p>
+      </div>
+    </div>
+
+    <!-- Candidate Grid (3 Cols) -->
+    <div class="lg:col-span-3">
+      
+      <div class="mb-4 flex items-center justify-between text-xs text-slate-500 font-mono">
+        <span>Found <strong>{{ candidates|length }}</strong> matching candidate(s)</span>
+        <span>Standard Single-Column ATS Format</span>
+      </div>
+
+      {% if candidates %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {% for c in candidates %}
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              
+              <!-- Card Header -->
+              <div class="flex items-start justify-between">
+                <div>
+                  <h4 class="text-sm font-bold text-slate-900">{{ c.full_name }}</h4>
+                  <div class="text-xs text-slate-500 font-mono mt-0.5">
+                    {{ c.roll_no }} &bull; {{ c.branch }}
+                  </div>
+                </div>
+
+                <!-- RRI Score Badge -->
+                <div class="text-right">
+                  <span class="inline-block px-2.5 py-1 rounded-full text-xs font-extrabold {% if c.rri.total_rri >= 85 %}bg-emerald-100 text-emerald-800 border border-emerald-300{% elif c.rri.total_rri >= 70 %}bg-blue-100 text-blue-800 border border-blue-300{% elif c.rri.total_rri >= 50 %}bg-amber-100 text-amber-800 border border-amber-300{% else %}bg-rose-100 text-rose-800 border border-rose-300{% endif %}">
+                    {{ c.rri.total_rri }} RRI
+                  </span>
+                </div>
+              </div>
+
+              <!-- Academic Metrics & Verification -->
+              <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                <div>
+                  <span class="text-[10px] text-slate-400 block uppercase">CGPA</span>
+                  <span class="font-bold text-slate-800 font-mono">{{ c.cgpa }} / 10.0</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 block uppercase">Backlogs</span>
+                  <span class="font-bold {% if c.backlogs > 0 %}text-rose-600{% else %}text-emerald-600{% endif %} font-mono">
+                    {{ c.backlogs }}
+                  </span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 block uppercase">Verification</span>
+                  {% if c.is_verified %}
+                    <span class="text-emerald-700 font-bold text-[11px]">VERIFIED</span>
+                  {% else %}
+                    <span class="text-amber-600 font-bold text-[11px]">PENDING</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Skills Tags -->
+              {% if c.skills %}
+              <div class="mt-3">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reported Skills</div>
+                <div class="flex flex-wrap gap-1">
+                  {% for s in c.skills.split(',') %}
+                    {% if s.strip() %}
+                      <span class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                        {{ s.strip() }}
+                      </span>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+
+            </div>
+
+            <!-- Card Footer Actions -->
+            <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span class="text-[11px] text-slate-500 font-mono">{{ c.rri.tier }}</span>
+              <a href="/recruiter/resume/{{ c.id }}/download" class="px-3 py-1.5 bg-slate-900 hover:bg-black text-white font-semibold rounded text-xs transition shadow-sm flex items-center">
+                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                PDF Resume
+              </a>
+            </div>
+
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
+          <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <h4 class="text-base font-bold text-slate-700">No Candidates Matched Criteria</h4>
+          <p class="text-xs text-slate-400 mt-1">Try lowering the minimum CGPA or clearing specific technical skill filters.</p>
+        </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
